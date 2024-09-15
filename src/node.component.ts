@@ -7,57 +7,73 @@ import {
   effect,
   signal,
   DoCheck,
-} from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+  input,
+  Injector,
+} from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 
 @Component({
-  selector: 'app-node',
+  selector: "app-node",
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
   template: `
-    <div [ngStyle]="{ 'background-color': getColorByLevel(level), 'border': '1px solid black', 'padding': '10px' }" style="margin-bottom: 10px;">
-      <p>Level: {{ level }} - Value: {{ value() | number:'1.2-2' }}</p>
-      <p>Change Detection Runs: {{ changeDetectionRuns() }}</p>
+    <div
+      [ngStyle]="{
+        'background-color': getColorByLevel(level()),
+        border: '1px solid black',
+        padding: '10px'
+      }"
+      style="margin-bottom: 10px;"
+    >
+      {{ logCd() }}
+      <p>Level: {{ level() }}</p>
+      <p>Change Detection Runs: {{ localChangeDetectionRuns }}</p>
       <p>Counter: {{ counter() }}</p>
 
-      <!-- Counter Button -->
+      Counter Button
+
       <button (click)="incrementCounter()">Increment Counter</button>
 
       <!-- Timer Controls -->
       <div>
-        <button *ngIf="!isTimerRunning()" (click)="startTimer()">Start Timer</button>
-        <button *ngIf="isTimerRunning()" (click)="stopTimer()">Stop Timer</button>
+        <button *ngIf="!isTimerRunning()" (click)="startTimer()">
+          Start Timer
+        </button>
+        <button *ngIf="isTimerRunning()" (click)="stopTimer()">
+          Stop Timer
+        </button>
       </div>
 
       <!-- Add Subnodes -->
       <label for="subnodes">Add Subnodes: </label>
-      <input type="number" [(ngModel)]="childrenToAdd">
+      <input type="number" [(ngModel)]="childrenToAdd" />
+
       <button (click)="addChildren()">Add Children</button>
 
       <!-- Display Subnodes -->
-      <div *ngFor="let subNode of subNodes">
-        <app-node [level]="level + 1" [value]="value" [childrenToAdd]="childrenToAdd"></app-node>
-      </div>
+
+      @for (level of subNodes; track level) {
+      <app-node [level]="newLevel()"></app-node>
+      }
     </div>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class NodeComponent implements DoCheck {
-  @Input() level!: number;
-  @Input() value!: Signal<number>;
-  @Input() childrenToAdd!: Signal<number>;
+export class NodeComponent {
+  level = input<number>(0);
+  childrenToAdd = signal<number>(0);
+  newLevel = computed(() => this.level() + 1);
 
   subNodes: number[] = [];
   counter = signal(0);
-  changeDetectionRuns = signal(0);
   isTimerRunning = signal(false);
+  localChangeDetectionRuns = 0;
 
   private timer?: any;
 
-  ngDoCheck(): void {
-    // Increment the signal value on every change detection cycle
-    this.changeDetectionRuns.update((runs) => runs + 1);
+  logCd(): void {
+    this.localChangeDetectionRuns++;
   }
 
   incrementCounter(): void {
@@ -80,7 +96,7 @@ export class NodeComponent implements DoCheck {
   }
 
   getColorByLevel(level: number): string {
-    const colors = ['#FFDDC1', '#FFABAB', '#FFC3A0', '#FF677D', '#D4A5A5'];
+    const colors = ["#FFDDC1", "#FFABAB", "#FFC3A0", "#FF677D", "#D4A5A5"];
     return colors[level % colors.length];
   }
 }

@@ -7,17 +7,18 @@ import {
   inject,
   ApplicationRef,
   ChangeDetectionStrategy,
-} from '@angular/core';
+  WritableSignal,
+} from "@angular/core";
 import {
   bootstrapApplication,
   enableDebugTools,
-} from '@angular/platform-browser';
-import { NodeComponent } from './node.component';
-import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+} from "@angular/platform-browser";
+import { NodeComponent } from "./node.component";
+import { CommonModule } from "@angular/common";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 
 @Component({
-  selector: 'app-root',
+  selector: "app-root",
   standalone: true,
   imports: [NodeComponent, CommonModule, ReactiveFormsModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,61 +28,43 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
     <!-- Input for setting levels dynamically -->
     <label for="levels">Set Levels: </label>
-    <input type="number" [value]="maxLevel()" (input)="setMaxLevel(maxLevel())" />
-
-    <button (click)="updateValue()">Update Value</button>
+    <input type="number" [(ngModel)]="maxLevel" />
 
     <!-- Render Nodes -->
     <div class="node-wrapper">
-      <app-node 
-        *ngFor="let level of levels()" 
-        [level]="level" 
-        [value]="value"
-        [childrenToAdd]="childrenToAdd">
-      </app-node>
+      @for (level of levels(); track level) {
+      <app-node [level]="level"> </app-node>
+
+      }
     </div>
   `,
   styles: [
     `
-    .node-wrapper { display: flex; flex-wrap: wrap; justify-content: space-around; }
-  `,
+      .node-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+      }
+    `,
   ],
 })
 export class AppComponent {
-  value = signal<number>(1); // Using signal to hold value
-  maxLevel = signal<number>(5); // Signal for max levels
-  childrenToAdd = signal<number>(0); // Signal for adding subnodes dynamically
+  maxLevel = signal<number>(0); // Signal for max levels
+
   changeDetectionCycles = signal<number>(0); // Signal for counting CD cycles
 
   // Levels computed based on maxLevel signal
   levels = computed(() =>
-    Array.from({ length: this.maxLevel() }, (_, i) => i + 1)
+    Array(this.maxLevel())
+      .fill(0)
+      .map((_, i) => i)
   );
 
-  constructor() {
-    const appRef = inject(ApplicationRef);
-    const originalTick = appRef.tick;
+  todos = signal<number[]>([]);
 
-    appRef.tick = () => {
-      const before = performance.now();
-      originalTick.apply(appRef);
-      const after = performance.now();
-      this.changeDetectionCycles.update((v) => v + 1);
-      console.log(`Change Detection cycle took: ${after - before} ms`);
-    };
-  }
+  constructor() {}
 
   // Method to profile and show change detection cycles
-
-  // Update the value signal with a random number
-  updateValue() {
-    this.value.set(Math.random() * 100);
-  }
-
-  // Update max levels signal
-  setMaxLevel(level: number) {
-    this.maxLevel.set(Number(level) || 1);
-  }
 }
 
 bootstrapApplication(AppComponent).then((moduleRef) => {
@@ -92,5 +75,5 @@ bootstrapApplication(AppComponent).then((moduleRef) => {
   enableDebugTools(componentRef);
 
   // Log to console when Angular debug tools are enabled
-  console.log('Angular debug tools enabled');
+  console.log("Angular debug tools enabled");
 });
